@@ -35,7 +35,7 @@ Ext.define("PTBoard", {
 
     /*
 
-selector_box.add({
+    selector_box.add({
                 xtype:'rallycombobox',
                 stateful: true,
                 stateId: this.getContext().getScopedStateId('portfolioItem-cb'),
@@ -92,22 +92,13 @@ selector_box.add({
  
         filter = Rally.data.wsapi.Filter.or(filters).and({property:'Children.Name', value:"" }).and(filter);
         
-        var selector_box = this.down('#selector_box');
-            // selector_box.add({
-            //     xtype: 'rallymultiobjectpicker',
-            //     autoExpand: true,
-            //     modelType: 'Project'
-            //     // ,
-            //     // storeConfig: {
-            //     //     autoLoad: true,
-            //     //     filters: filter,
-            //     //     remoteFilter: true
-            //     // }             
-            //  });
+
 
         var selector_box = this.down('#selector_box');
+            selector_box.remove('projectCombobox');
             selector_box.add({
                 xtype:'rallycombobox',
+                id:'projectCombobox',
                 multiSelect: true,
                 allowNoEntry:true,
                 autoSelect: false,
@@ -125,7 +116,6 @@ selector_box.add({
                 listeners: {
                     scope: this,
                     change: function(cb) {
-                        console.log(cb)
                         if(cb.lastSelection[0].get('Name')==""){
                             this._getArtifacts(filter);
                         }else{
@@ -140,34 +130,15 @@ selector_box.add({
                     }
                 }
             });
+
+            this._getArtifacts(filter);
     },
 
 
     _getArtifacts: function(project_filter){
         var me = this;
         this.setLoading("Loading Projects...");
-        //me.release = rcb;
-        // var project_name = me.getContext().get('project').Name;
-
-        // var filter = Ext.create('Rally.data.wsapi.Filter', {
-        //      property: 'Releases.Name',
-        //      operator: 'contains',
-        //      value: rcb.rawValue
-        // });
-
-        // filters = [
-        //      {property:'Parent.Name',  value: project_name},
-        //      {property:'Parent.Parent.Name', value: project_name},
-        //      {property:'Parent.Parent.Parent.Name', value: project_name},
-        //      {property:'Parent.Parent.Parent.Parent.Name', value: project_name},
-        //      {property:'Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-        //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-        //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-        //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-        //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name}
-        // ]
- 
-        // filter = Rally.data.wsapi.Filter.or(filters).and({property:'Children.Name', value:"" }).and(filter);
+     
  
         var model_name = 'Project',
             field_names = ['Name','State','TeamMembers','User','Results','QueryResult'];
