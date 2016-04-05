@@ -3,11 +3,11 @@
 <head>
     <title>Project Tracking Board</title>
     <!--  (c) 2015,2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Tue Mar 29 2016 19:29:52 GMT-0400 (EDT) -->
+    <!--  Build Date: Tue Apr 05 2016 16:43:15 GMT-0400 (EDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Mar 29 2016 19:29:52 GMT-0400 (EDT)";
-        var CHECKSUM = 25077833627;
+        var APP_BUILD_DATE = "Tue Apr 05 2016 16:43:15 GMT-0400 (EDT)";
+        var CHECKSUM = 56858447538;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -176,6 +176,395 @@ Ext.define('Rally.technicalservices.Logger',{
 
 });
 
+/*
+Tree combo
+Use with 'Ext.data.TreeStore'
+
+
+If store root note has 'checked' property tree combo becomes multiselect combo (tree store must have records with 'checked' property)
+
+
+Has event 'itemclick' that can be used to capture click
+
+
+Options:
+selectChildren - if set true and if store isn't multiselect, clicking on an non-leaf node selects all it's children
+canSelectFolders - if set true and store isn't multiselect clicking on a folder selects that folder also as a value
+
+
+Use:
+
+
+single leaf node selector:
+selectChildren: false
+canSelectFolders: false
+- this will select only leaf nodes and will not allow selecting non-leaf nodes
+
+
+single node selector (can select leaf and non-leaf nodes)
+selectChildren: false
+canSelectFolders: true
+- this will select single value either leaf or non-leaf
+
+
+children selector:
+selectChildren: true
+canSelectFolders: true
+- clicking on a node will select it's children and node, clicking on a leaf node will select only that node
+
+
+This config:
+selectChildren: true
+canSelectFolders: false
+- is invalid, you cannot select children without node
+
+
+*/
+Ext.define('Ext.ux.TreeCombo',
+{
+	extend: 'Ext.form.field.Picker',
+	alias: 'widget.treecombo',
+	tree: false,
+	constructor: function(config)
+	{
+		this.addEvents(
+		{
+			"itemclick" : true
+		});
+
+		this.listeners = config.listeners;
+		this.callParent(arguments);
+	},
+	records: [],
+	recursiveRecords: [],
+	ids: [],
+	selectChildren: true,
+	canSelectFolders: true,
+	multiselect: false,
+	displayField: 'text',
+	valueField: 'id',
+	treeWidth: 300,
+	matchFieldWidth: false,
+	treeHeight: 400,
+	masN: 0,
+	recursivePush: function(node, setIds)
+	{
+		var	me = this;
+
+
+		me.addRecRecord(node);
+		if(setIds) me.addIds(node);
+		
+		node.eachChild(function(nodesingle)
+		{
+			if(nodesingle.hasChildNodes() == true)
+			{
+				me.recursivePush(nodesingle, setIds);
+			}
+			else
+			{
+				me.addRecRecord(nodesingle);
+				if(setIds) me.addIds(nodesingle);
+			}
+		});
+	},
+	recursiveUnPush: function(node)
+	{
+		var	me = this;
+		me.removeIds(node);
+		
+		node.eachChild(function(nodesingle)
+		{
+			if(nodesingle.hasChildNodes() == true)
+			{
+				me.recursiveUnPush(nodesingle);
+			}
+			else me.removeIds(nodesingle);
+		});
+	},
+	addRecRecord: function(record)
+	{
+		var	me = this;
+
+
+		for(var i=0,j=me.recursiveRecords.length;i<j;i++)
+		{
+			var item = me.recursiveRecords[i];
+			if(item)
+			{
+				if(item.getId() == record.getId()) return;
+			}
+		}
+		me.recursiveRecords.push(record);
+	},
+	afterLoadSetValue: false,
+	setValue: function(valueInit)
+	{
+		if(typeof valueInit == 'undefined') return;
+		
+		var	me = this,
+			tree = this.tree,
+			values = (valueInit == '') ? [] : valueInit.split(','),
+			valueFin = [];
+			
+		inputEl = me.inputEl;
+
+
+		if(tree.store.isLoading())
+		{
+			me.afterLoadSetValue = valueInit;
+		}
+
+
+		if(inputEl && me.emptyText && !Ext.isEmpty(values))
+		{
+			inputEl.removeCls(me.emptyCls);
+		}
+
+
+		if(tree == false) return false;
+		
+		var node = tree.getRootNode();
+		if(node == null) return false;
+		
+		me.recursiveRecords = [];
+		me.recursivePush(node, false);
+		
+		me.records = [];
+		Ext.each(me.recursiveRecords, function(record)
+		{
+			var	id = record.get(me.valueField),
+				index = values.indexOf(''+id);
+		
+			if(me.multiselect == true) record.set('checked', false);
+			
+			if(index != -1)
+			{
+				valueFin.push(record.get(me.displayField));
+				if(me.multiselect == true) record.set('checked', true);
+				me.addRecord(record);
+			}
+		});
+
+
+		me.value = valueInit;
+		me.setRawValue(valueFin.join(', '));
+		
+		me.checkChange();
+		me.applyEmptyText();
+		return me;
+	},
+	getValue: function() 
+	{
+		return this.value;
+	},
+	getSubmitValue: function()
+	{
+		return this.value;
+	},
+	checkParentNodes: function(node)
+	{
+		if(node == null) return;
+		
+		var	me = this,
+			checkedAll = true;
+
+
+		node.eachChild(function(nodesingle)
+		{
+			var	id = nodesingle.getId(),
+				index = me.ids.indexOf(''+id);
+				
+			if(index == -1) checkedAll = false;
+		});
+		
+		if(checkedAll == true)
+		{
+			me.addIds(node);
+			me.checkParentNodes(node.parentNode);
+		}
+		else
+		{
+			me.removeIds(node);
+			me.checkParentNodes(node.parentNode);
+		}
+	},
+	initComponent: function() 
+	{
+		var	me = this;
+		
+		me.tree = Ext.create('Ext.tree.Panel',
+		{
+			alias: 'widget.assetstree',
+			hidden: true,
+			minHeight: 300,
+			rootVisible: (typeof me.rootVisible != 'undefined') ? me.rootVisible : true,
+			floating: true,
+			useArrows: true,
+			width: me.treeWidth,
+			autoScroll: true,
+			height: me.treeHeight,
+			store: me.store,
+			listeners:
+			{
+				load: function(store, records)
+				{
+					if(me.afterLoadSetValue != false)
+					{
+						me.setValue(me.afterLoadSetValue);
+					}
+				},
+				itemclick:  function(view, record, item, index, e, eOpts)
+				{
+					me.itemTreeClick(view, record, item, index, e, eOpts, me)
+				}
+			}
+		});
+		
+		if(me.tree.getRootNode().get('checked') != null) me.multiselect = true;
+		
+		this.createPicker = function()
+		{
+			var	me = this;
+			return me.tree;
+		};
+		
+		this.callParent(arguments);
+	},
+	addIds: function(record)
+	{
+		var	me = this;
+		
+		if(me.ids.indexOf(''+record.getId()) == -1) me.ids.push(''+record.get(me.valueField));
+	},
+	removeIds: function(record)
+	{
+		var	me = this,
+			index = me.ids.indexOf(''+record.getId());
+			
+		if(index != -1)
+		{
+			me.ids.splice(index, 1);
+		}
+	},
+	addRecord: function(record)
+	{
+		var	me = this;
+
+
+		for(var i=0,j=me.records.length;i<j;i++)
+		{
+			var item = me.records[i];
+			if(item)
+			{
+				if(item.getId() == record.getId()) return;
+			}
+		}
+		me.records.push(record);
+	},
+	removeRecord: function(record)
+	{
+		var	me = this;
+
+
+		for(var i=0,j=me.records.length;i<j;i++)
+		{
+			var item = me.records[i];
+			if(item && item.getId() == record.getId()) delete(me.records[i]);
+		}
+	},
+	itemTreeClick: function(view, record, item, index, e, eOpts, treeCombo)
+	{
+		var	me = treeCombo,
+			checked = !record.get('checked');//it is still not checked if will be checked in this event
+		
+		if(me.multiselect == true) record.set('checked', checked);//check record
+		
+		var node = me.tree.getRootNode().findChild(me.valueField, record.get(me.valueField), true);
+		if(node == null) 
+		{
+			if(me.tree.getRootNode().get(me.valueField) == record.get(me.valueField)) node = me.tree.getRootNode();
+			else return false;
+		}
+		
+		if(me.multiselect == false) me.ids = [];
+		
+		//if it can't select folders and it is a folder check existing values and return false
+		if(me.canSelectFolders == false && record.get('leaf') == false)
+		{
+			me.setRecordsValue(view, record, item, index, e, eOpts, treeCombo);
+			return false;
+		}
+		
+		//if record is leaf
+		if(record.get('leaf') == true) 
+		{
+			if(checked == true)
+			{
+				me.addIds(record);
+			}
+			else
+			{
+				me.removeIds(record);
+			}
+		}
+		else //it's a directory
+		{			
+			me.recursiveRecords = [];
+			if(checked == true)
+			{
+				if(me.multiselect == false)
+				{
+					if(me.canSelectFolders == true) me.addIds(record); 
+				}
+				else
+				{
+					if(me.canSelectFolders == true)
+					{
+						me.recursivePush(node, true);
+					}
+				}
+			}
+			else
+			{
+				if(me.multiselect == false)
+				{
+					if(me.canSelectFolders == true) me.recursiveUnPush(node);
+					else me.removeIds(record);
+				}
+				else me.recursiveUnPush(node);
+			}
+		}
+		
+		//this will check every parent node that has his all children selected
+		if(me.canSelectFolders == true && me.multiselect == true) me.checkParentNodes(node.parentNode);
+		
+		me.setRecordsValue(view, record, item, index, e, eOpts, treeCombo);
+	},
+	fixIds: function()
+	{
+		var me = this;
+		
+		for(var i=0,j=me.ids.length;i<j;i++)
+		{
+			if(me.ids[i] == 'NaN') me.ids.splice(i, 1);
+		}
+	},
+	setRecordsValue: function(view, record, item, index, e, eOpts, treeCombo)
+	{
+		var	me = treeCombo;
+		
+		me.fixIds();
+		
+		me.setValue(me.ids.join(','));
+
+
+		me.fireEvent('itemclick', me, record, item, index, e, eOpts, me.records, me.ids);
+
+
+		if(me.multiselect == false) me.onTriggerClick();
+	}	
+});
 var comboTPL = new Ext.XTemplate(
          '<tpl for=".">',
              '<div class="x-boundlist-item">',
@@ -205,30 +594,262 @@ Ext.define("PTBoard", {
     integrationHeaders : {
         name : "PTBoard"
     },
+
+    //this.getSetting('testCaseType');
+    config: {
+        defaultSettings: {
+            testCaseType   : 'User Acceptance Testing',
+            smRole: 'Scrum Master',
+            poRole: 'Product Owner'
+        }
+    },
+
+    getSettingsFields: function() {
+        var me = this;
+
+        return [
+            {
+                name: 'testCaseType',
+                xtype: 'rallyfieldvaluecombobox',
+                fieldLabel: 'UAT Type',
+                labelWidth: 125,
+                labelAlign: 'left',
+                minWidth: 200,
+                margin: 10,
+                autoExpand: false,
+                alwaysExpanded: false,
+                model: 'TestCase',
+                field: 'Type',
+                readyEvent: 'ready'
+            },
+            {
+                name: 'smRole',
+                xtype: 'rallyfieldvaluecombobox',
+                fieldLabel: 'Scrum Master Role',
+                labelWidth: 125,
+                labelAlign: 'left',
+                minWidth: 200,
+                margin: 10,
+                autoExpand: false,
+                alwaysExpanded: false,
+                model: 'User',
+                field: 'Role',
+                readyEvent: 'ready'
+            },
+            {
+                name: 'poRole',
+                xtype: 'rallyfieldvaluecombobox',
+                fieldLabel: 'Product Owner Role',
+                labelWidth: 125,
+                labelAlign: 'left',
+                minWidth: 200,
+                margin: 10,
+                autoExpand: false,
+                alwaysExpanded: false,
+                model: 'User',
+                field: 'Role',
+                readyEvent: 'ready'
+            }
+        ];
+    },
                         
     launch: function() {
         var me = this;
+
+        // me._getProjectTreeStore().then({
+        //     success: function(store) {
+        //         me.project_tree_store = store;
+        //     },
+        //     failure: function(error_message){
+        //         alert(error_message);
+        //     },
+        //     scope: me
+        // });
+
         me._addSelector();
     },
-      
+    
+
+
+
     _addSelector: function() {
         var selector_box = this.down('#selector_box');
             selector_box.removeAll();
+
+        var project_name = this.getContext().get('project').Name;
+
+
+        filters = [
+             {property:'Name',  value: project_name},
+             {property:'Parent.Name',  value: project_name},
+             {property:'Parent.Parent.Name', value: project_name},
+             {property:'Parent.Parent.Parent.Name', value: project_name},
+             {property:'Parent.Parent.Parent.Parent.Name', value: project_name},
+             {property:'Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+             {property:'Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+             {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+             {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+             {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name}
+        ]
+ 
+         filter = Rally.data.wsapi.Filter.or(filters);
+
             
-            selector_box.add({
-                xtype:'rallyreleasecombobox',
-                fieldLabel: 'Release:',
-                listeners: {
-                    scope: this,
-                    change: function(rcb) {
-                        this._addProjectSelector(rcb);
-                    }
+        selector_box.add({
+            xtype:'rallyreleasecombobox',
+            fieldLabel: 'Release:',
+            width:500,
+            margin:10,
+            listeners: {
+                scope: this,
+                change: function(rcb) {
+                    //this._addProjectSelector(rcb);
+                    this.release = rcb;
                 }
-            });
+            }
+        });
+
+        selector_box.add({
+            xtype:'rallycombobox',
+            id:'projectCombobox',
+            multiSelect: true,
+            allowNoEntry:true,
+            autoSelect: false,
+            fieldLabel: 'Project:',
+            labelAlign: 'right',
+            noEntryText: '--All--',
+            width:400,
+            // noEntryValue: 'All',
+            storeConfig: {
+                autoLoad: true,
+                model: 'Project',
+                filters: filter,
+                remoteFilter: true
+            },
+            //tpl:comboTPL,
+            listeners: {
+                scope: this,
+                change: function(cb) {
+                        if(cb.lastSelection.length ==0 || (cb.lastSelection.length > 0 && cb.lastSelection[0].get('ObjectID') == null) ){
+                            this.project_filter = filter;
+                        }else{
+                            var project_filters = [];
+                            Ext.Array.each(cb.lastSelection,function(project){
+                                project_filters.push({property:'ObjectID',  value: project.get('ObjectID')});
+                            });
+                            this.project_filter = Rally.data.wsapi.Filter.or(project_filters)        
+                        }
+                }
+            },
+            margin:10
+
+        });
+
+        selector_box.add({
+            xtype: 'rallybutton',
+            text: 'Update',
+            // width: 200,
+            margin:10,
+            cls: 'primary',
+            listeners: {
+                click: this._getArtifacts,
+                scope: this
+            }
+        });
+
+        // selector_box.add({           
+        //     fieldLabel: 'Project',
+        //     labelWidth: 45,
+        //     xtype: 'rallyprojectpicker',
+        //     showMostRecentlyUsedProjects: false,
+        //     multiple: true,
+        //     margin: 10,
+        //     stateful: true,
+        //     stateId: 'rally.technicalservices.timeline.project',
+        //     stateEvents: ['change'],
+        //     workspace:this.getContext().get('workspace'),
+        //     listeners: {
+        //         scope: this,
+        //         change: function(selector) {
+        //             var project = selector.getSelectedRecord();
+        //             this.selected_context = {
+        //                 workspace:project.get('Workspace')._ref,
+        //                 project:project.get('_ref')
+        //             };
+        //             console.log(project);
+        //         }
+        //     }
+        // });
+
+        // selector_box.add({
+        //  xtype: 'rallyprojecttree',
+        //  workspace:this.getContext().get('workspace')
+        //  multiple:true
+        // });
+        var treeStoreSec = Ext.create('Ext.data.TreeStore',
+        {
+            root:
+            {
+                text: 'Root',
+                id: 'root',
+                expanded: true,
+                checked: false,
+                children:
+                [
+                    {id: '1', text: 'First node', leaf: false, checked: false, children:
+                        [
+                            {id: '3', text: 'First child node', checked: false, leaf: true},
+                            {id: '4', text: 'Second child node', checked: false, leaf: true}
+                        ]
+                    },
+                    {id: '2', text: 'Second node', checked: false, leaf: true}
+                ]
+            },
+            folderSort: false
+        });
+
+        // selector_box.add(
+        //     Ext.create('Ext.ux.TreeCombo',
+        //     {
+        //         store: this.project_tree_store
+        //     })
+        // );
+
     },
 
-    /*
+    _getProjectTreeStore: function(){
+        var deferred = Ext.create('Deft.Deferred');
 
+        var filters = [
+         {property:'Name',  value: project_name},
+         {property:'Parent.Name',  value: project_name},
+         {property:'Parent.Parent.Name', value: project_name},
+         {property:'Parent.Parent.Parent.Name', value: project_name},
+         {property:'Parent.Parent.Parent.Parent.Name', value: project_name},
+         {property:'Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+         {property:'Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+         {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+         {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+         {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name}
+        ];
+ 
+
+        // Ext.create('Ext.data.TreeStore', {
+        //     model: 'Project'
+        // }).load({
+        //     callback : function(records, operation, successful) {
+        //         if (successful){
+        //             deferred.resolve(records);
+        //         } else {
+        //             deferred.reject('Problem loading: ' + operation.error.errors.join('. '));
+        //         }
+        //     }
+
+        // });
+
+        return deferred;
+    },
+    /*
     selector_box.add({
                 xtype:'rallycombobox',
                 stateful: true,
@@ -272,19 +893,19 @@ Ext.define("PTBoard", {
              value: rcb.rawValue
         });
 
-        filters = [
-             {property:'Parent.Name',  value: project_name},
-             {property:'Parent.Parent.Name', value: project_name},
-             {property:'Parent.Parent.Parent.Name', value: project_name},
-             {property:'Parent.Parent.Parent.Parent.Name', value: project_name},
-             {property:'Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-             {property:'Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-             {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-             {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-             {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name}
-        ]
+        // filters = [
+        //      {property:'Parent.Name',  value: project_name},
+        //      {property:'Parent.Parent.Name', value: project_name},
+        //      {property:'Parent.Parent.Parent.Name', value: project_name},
+        //      {property:'Parent.Parent.Parent.Parent.Name', value: project_name},
+        //      {property:'Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+        //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+        //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+        //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+        //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name}
+        // ]
  
-        filter = Rally.data.wsapi.Filter.or(filters).and({property:'Children.Name', value:"" }).and(filter);
+        // filter = Rally.data.wsapi.Filter.or(filters).and({property:'Children.Name', value:"" }).and(filter);
         
 
 
@@ -299,6 +920,7 @@ Ext.define("PTBoard", {
                 fieldLabel: 'Project:',
                 labelAlign: 'right',
                 noEntryText: '--All--',
+                width:400,
                 // noEntryValue: 'All',
                 storeConfig: {
                     autoLoad: true,
@@ -329,13 +951,22 @@ Ext.define("PTBoard", {
     },
 
 
-    _getArtifacts: function(project_filter){
+    _getArtifacts: function(){
         var me = this;
         this.setLoading("Loading Projects...");
      
  
+        var release_filter = Ext.create('Rally.data.wsapi.Filter', {
+             property: 'Releases.Name',
+             operator: 'contains',
+             value: me.release.rawValue
+        });
+
+        project_filter = release_filter.and(this.project_filter);
+
         var model_name = 'Project',
             field_names = ['Name','State','TeamMembers','User','Results','QueryResult'];
+
         
         this._loadAStoreWithAPromise(model_name, field_names,project_filter).then({
             scope: this,
@@ -384,11 +1015,17 @@ Ext.define("PTBoard", {
             filters: filter
         }).load({
             callback : function(records, operation, successful) {
-                if (successful && records.length > 0){
-                    deferred.resolve(records);
-                } else {
-                    me.logger.log("No Projects Found", operation);
-                    deferred.reject("No Projects Found!");
+
+
+                if(successful){
+                    if (records.length > 0){
+                        deferred.resolve(records);
+                    } else {
+                        me.logger.log("No Projects Found", operation);
+                        deferred.reject("No Projects Found!");
+                    }
+                }else{
+                    deferred.reject("Problem Loading Data. See logs");
                 }
             }
         });
@@ -409,7 +1046,7 @@ Ext.define("PTBoard", {
                         me = this;
                         _.each(records, function(result){
                             promises.push(function(){
-                                return me._getColleciton(result); 
+                                return me._getCollection(result); 
                             });
                         },me);
 
@@ -425,11 +1062,11 @@ Ext.define("PTBoard", {
                                            // TCCounts: results[i].TCCounts,
                                             POorSMNames:results[i].POorSMNames,
                                             TotalTestCases:results[i].TCCounts.TotalTestCases,
-                                            TotalExecuted:results[i].TCCounts.TotalTCExecuted.TotalExecuted,
+                                            TotalExecuted:results[i].TCCounts.TotalTCExecuted ? results[i].TCCounts.TotalTCExecuted.TotalExecuted : 0,
                                             TotalAttachments:results[i].TCCounts.TotalAttachments,
                                             PassedTestCases:results[i].TCCounts.PassedTestCases,
                                             UATTCCounts:results[i].TCCounts.UATTCCounts,
-                                            TotalUATExecuted:results[i].TCCounts.TotalTCExecuted.TotalUATExecuted,
+                                            TotalUATExecuted:results[i].TCCounts.TotalTCExecuted ? results[i].TCCounts.TotalTCExecuted.TotalUATExecuted:0,
                                             UATTCPassCounts:results[i].TCCounts.UATTCPassCounts,
                                             TotalDefects:results[i].TCCounts.TotalDefects,
                                             USAcceptedByPO:results[i].TCCounts.USAcceptedByPO,
@@ -463,7 +1100,7 @@ Ext.define("PTBoard", {
            
     },
 
-    _getColleciton: function(record){
+    _getCollection: function(record){
         me = this;
         var deferred = Ext.create('Deft.Deferred');
 
@@ -471,8 +1108,9 @@ Ext.define("PTBoard", {
          var sm_oids = [];
          var po_oids = [];
 
-        record.getCollection('TeamMembers').load({
+        record.getCollection('Editors').load({
             fetch: ['ObjectID', 'FirstName', 'LastName','Role'],
+            scope: me,
             callback: function(records, operation, success) {
                 Ext.Array.each(records, function(user_rec) {
                     var user = {
@@ -481,11 +1119,11 @@ Ext.define("PTBoard", {
                                 }
                     users.push(user);
 
-                    if(user_rec.get('Role')=='Product Owner'){
+                    if(user_rec.get('Role')==me.getSetting('poRole')){
                         po_oids.push(user_rec.get('ObjectID'));
                     }
 
-                    if(user_rec.get('Role')=='Scrum Master'){
+                    if(user_rec.get('Role')==me.getSetting('smRole')){
                         sm_oids.push(user_rec.get('ObjectID'));
                     }
                     
@@ -500,7 +1138,9 @@ Ext.define("PTBoard", {
                         };
                         deferred.resolve(allCollection)
                     },
-                    failure: function(){},
+                    failure: function(error_message){
+                        deferred.reject(error_message);
+                    },
                     scope: me
                 });
 
@@ -510,7 +1150,6 @@ Ext.define("PTBoard", {
 
         return deferred;
     },
-
 
 
 
@@ -532,6 +1171,7 @@ Ext.define("PTBoard", {
             // limit: 1,
             // pageSize: 1
         }).load({
+            scope: me,
             callback: function(records, operation, success){
                 if (success){
                     var tc_counts = []
@@ -576,7 +1216,7 @@ Ext.define("PTBoard", {
 
 
                     if(0 < tc_filters.length){
-                        tc_filters_for_wsapi = Rally.data.wsapi.Filter.or(tc_filters).and({ property: 'Type',value:'User Acceptance Testing'});
+                        tc_filters_for_wsapi = Rally.data.wsapi.Filter.or(tc_filters).and({ property: 'Type',value:me.getSetting('testCaseType')});
                     }
 
 
@@ -590,7 +1230,7 @@ Ext.define("PTBoard", {
 
 
                     if(0 < tc_filters.length){
-                        tc_pass_filters_for_wsapi = Rally.data.wsapi.Filter.or(tc_filters).and({ property: 'Type',value:'User Acceptance Testing'}).and({ property: 'LastVerdict',value:'Pass'});
+                        tc_pass_filters_for_wsapi = Rally.data.wsapi.Filter.or(tc_filters).and({ property: 'Type',value:me.getSetting('testCaseType')}).and({ property: 'LastVerdict',value:'Pass'});
                     }
 
 
@@ -633,8 +1273,8 @@ Ext.define("PTBoard", {
                         scope:me                   
                     });
 
-                } else {
-                   // deferred.reject(Ext.String.format("Error getting {0} count for {1}: {2}", model, query_filters.toString(), operation.error.errors.join(',')));
+                } else{
+                    deferred.reject('Problem getting Data');
                 }
             }
         });
@@ -712,6 +1352,8 @@ Ext.define("PTBoard", {
                     var result = {Stories:total_us_accepted_by_po,Percentage:Ext.util.Format.number(result_pc, "000.00")};
                     deferred.resolve(result);
 
+                }else{
+                    deferred.reject('Problem querying lookback');
                 }
             }
         });
@@ -754,6 +1396,8 @@ Ext.define("PTBoard", {
                     var result_pc = user_story_ids.length > 0 ? ( total_us_accepted_by_sm/user_story_ids.length) * 100 : 0;
                     var result = {Stories:total_us_accepted_by_sm,Percentage:Ext.util.Format.number(result_pc, "000.00")};
                     deferred.resolve(result);
+                }else{
+                    deferred.reject('Problem querying lookback');
                 }
             }
         });
@@ -781,7 +1425,7 @@ Ext.define("PTBoard", {
         });
 
         tc_promises.push(function(){
-            if(attach_filters!=null){
+            if(tc_filters!=null){
                 return me._getTestCasesForUS(Rally.data.wsapi.Filter.or(tc_filters))
             }else{
                 return null;
@@ -825,7 +1469,7 @@ Ext.define("PTBoard", {
                     }
 
                     // all conditions + UAT type.
-                    if(has_attachment && has_verdict && executed_with_in_release && test_case.Type == "User Acceptance Testing"){
+                    if(has_attachment && has_verdict && executed_with_in_release && test_case.Type == me.getSetting('testCaseType')){
                         total_uat_executed += 1;
                     }
 
@@ -933,6 +1577,7 @@ Ext.define("PTBoard", {
 // # of Defects
     
     _displayGrid: function(store,field_names){
+        var me = this;
         var display_box = this.down('#display_box');
         display_box.removeAll();
 
@@ -942,19 +1587,21 @@ Ext.define("PTBoard", {
             features: [{
                 ftype: 'summary'
             }],
+            scope: me,
             columnCfgs: [
                 {
                     text: 'PROJECT', 
                     dataIndex: 'ProjectName',
                     flex: 2,
                     summaryRenderer: function() {
-                        return '<align=left><b>TOTAL</b></align>'; 
+                        return '<b>TOTAL</b>'; 
                     }
                 },
                 {
                     text: 'USER STORY COUNT', 
                     dataIndex: 'UserStoryCount',
                     flex: 1,
+                    align: 'center',
                     summaryType:'sum',
                     summaryRenderer:function(val){
                         return '<b>'+val+'</b>';
@@ -969,7 +1616,7 @@ Ext.define("PTBoard", {
                             var text = [];
                             if(POorSMNames){
                                     Ext.Array.each(POorSMNames, function(user) {
-                                        if('Product Owner' == user.Role){
+                                        if(me.getSetting('poRole') == user.Role){
                                             text.push(user.FullName);
                                         }
                                     });
@@ -985,6 +1632,7 @@ Ext.define("PTBoard", {
                     text: 'PO ACCEPTED USER STORY COUNT / %', 
                     dataIndex: 'USAcceptedByPO',
                     flex: 1,
+                    align: 'center',
                     renderer: function(USAcceptedByPO){
                         return USAcceptedByPO.Stories + ' / ' + USAcceptedByPO.Percentage+ '%';
                     }
@@ -997,7 +1645,7 @@ Ext.define("PTBoard", {
                             var text = [];
                             if(POorSMNames){
                                     Ext.Array.each(POorSMNames, function(user) {
-                                        if('Scrum Master' == user.Role){
+                                        if(me.getSetting('smRole') == user.Role){
                                             text.push(user.FullName);
                                         }
                                     });
@@ -1012,6 +1660,7 @@ Ext.define("PTBoard", {
                     text: 'SM RELEASED TO PROD USER STORY COUNT / %', 
                     dataIndex: 'USAcceptedBySM',
                     flex: 1,
+                    align: 'center',
                     renderer: function(USAcceptedBySM){
                         return USAcceptedBySM.Stories + ' / ' + USAcceptedBySM.Percentage+ '%';
                     }
@@ -1021,6 +1670,7 @@ Ext.define("PTBoard", {
                     text: 'TOTAL TESTS COUNT', 
                     dataIndex: 'TotalTestCases',
                     flex: 1,
+                    align: 'center',
                     summaryType:'sum',
                     summaryRenderer:function(val){
                         return '<b>'+val+'</b>';
@@ -1031,6 +1681,7 @@ Ext.define("PTBoard", {
                     text: 'TOTAL TESTS <b>EXECUTED</b>', 
                     dataIndex: 'TotalExecuted',
                     flex: 1,
+                    align: 'center',
                     summaryType: 'sum',
                     summaryRenderer:function(val){
                         return '<b>'+val+'</b>';
@@ -1042,6 +1693,7 @@ Ext.define("PTBoard", {
                     text: 'NUMBER OF TESTS WITH RESULT ATTACHMENTS', 
                     dataIndex: 'TotalAttachments',
                     flex: 1,
+                    align: 'center',
                     summaryType: 'sum',
                     summaryRenderer:function(val){
                         return '<b>'+val+'</b>';
@@ -1052,6 +1704,7 @@ Ext.define("PTBoard", {
                     text: 'PASSED TESTS', 
                     dataIndex: 'PassedTestCases',
                     flex: 1,
+                    align: 'center',
                     summaryType: 'sum',
                     summaryRenderer:function(val){
                         return '<b>'+val+'</b>';
@@ -1062,6 +1715,7 @@ Ext.define("PTBoard", {
                     text: 'TOTAL UAT TESTS COUNT', 
                     dataIndex: 'UATTCCounts',
                     flex: 1,
+                    align: 'center',
                     summaryType: 'sum',
                     summaryRenderer:function(val){
                         return '<b>'+val+'</b>';
@@ -1073,6 +1727,7 @@ Ext.define("PTBoard", {
                     text: 'TOTAL UAT TESTS <b>EXECUTED</b>', 
                     dataIndex: 'TotalUATExecuted',
                     flex: 1,
+                    align: 'center',
                     summaryType: 'sum',
                     summaryRenderer:function(val){
                         return '<b>'+val+'</b>';
@@ -1084,6 +1739,7 @@ Ext.define("PTBoard", {
                     text: 'PASSED UAT TESTS', 
                     dataIndex: 'UATTCPassCounts',
                     flex: 1,
+                    align: 'center',
                     summaryType: 'sum',
                     summaryRenderer:function(val){
                         return '<b>'+val+'</b>';
@@ -1094,6 +1750,7 @@ Ext.define("PTBoard", {
                     text: 'TOTAL DEFECTS', 
                     dataIndex: 'TotalDefects',
                     flex: 1,
+                    align: 'center',
                     summaryType: 'sum',
                     summaryRenderer:function(val){
                         return '<b>'+val+'</b>';
