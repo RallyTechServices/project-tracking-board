@@ -136,6 +136,17 @@ Ext.define("PTBoard", {
             labelAlign: 'right',
             noEntryText: '--All--',
             width:400,
+            // listConfig: {
+            //     getInnerTpl: function(displayField) {
+            //         console.log(displayField);
+            //         return '<div class="x-combo-list-item"><img src="" class="chkCombo-default-icon chkCombo" /> {'+ displayField +'}</div>';
+            //     }
+            // },
+            // listConfig : {          
+            //     getInnerTpl : function() {
+            //         return '<div class="x-combo-list-item"><img src="' + Ext.BLANK_IMAGE_URL + '" class="chkCombo-default-icon chkCombo" /> {fieldName} </div>';
+            //     }
+            // },
             // noEntryValue: 'All',
             storeConfig: {
                 autoLoad: true,
@@ -203,27 +214,27 @@ Ext.define("PTBoard", {
         //  workspace:this.getContext().get('workspace')
         //  multiple:true
         // });
-        var treeStoreSec = Ext.create('Ext.data.TreeStore',
-        {
-            root:
-            {
-                text: 'Root',
-                id: 'root',
-                expanded: true,
-                checked: false,
-                children:
-                [
-                    {id: '1', text: 'First node', leaf: false, checked: false, children:
-                        [
-                            {id: '3', text: 'First child node', checked: false, leaf: true},
-                            {id: '4', text: 'Second child node', checked: false, leaf: true}
-                        ]
-                    },
-                    {id: '2', text: 'Second node', checked: false, leaf: true}
-                ]
-            },
-            folderSort: false
-        });
+        // var treeStoreSec = Ext.create('Ext.data.TreeStore',
+        // {
+        //     root:
+        //     {
+        //         text: 'Root',
+        //         id: 'root',
+        //         expanded: true,
+        //         checked: false,
+        //         children:
+        //         [
+        //             {id: '1', text: 'First node', leaf: false, checked: false, children:
+        //                 [
+        //                     {id: '3', text: 'First child node', checked: false, leaf: true},
+        //                     {id: '4', text: 'Second child node', checked: false, leaf: true}
+        //                 ]
+        //             },
+        //             {id: '2', text: 'Second node', checked: false, leaf: true}
+        //         ]
+        //     },
+        //     folderSort: false
+        // });
 
         // selector_box.add(
         //     Ext.create('Ext.ux.TreeCombo',
@@ -234,38 +245,38 @@ Ext.define("PTBoard", {
 
     },
 
-    _getProjectTreeStore: function(){
-        var deferred = Ext.create('Deft.Deferred');
+    // _getProjectTreeStore: function(){
+    //     var deferred = Ext.create('Deft.Deferred');
 
-        var filters = [
-         {property:'Name',  value: project_name},
-         {property:'Parent.Name',  value: project_name},
-         {property:'Parent.Parent.Name', value: project_name},
-         {property:'Parent.Parent.Parent.Name', value: project_name},
-         {property:'Parent.Parent.Parent.Parent.Name', value: project_name},
-         {property:'Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-         {property:'Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-         {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-         {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-         {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name}
-        ];
+    //     var filters = [
+    //      {property:'Name',  value: project_name},
+    //      {property:'Parent.Name',  value: project_name},
+    //      {property:'Parent.Parent.Name', value: project_name},
+    //      {property:'Parent.Parent.Parent.Name', value: project_name},
+    //      {property:'Parent.Parent.Parent.Parent.Name', value: project_name},
+    //      {property:'Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+    //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+    //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+    //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+    //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name}
+    //     ];
  
 
-        // Ext.create('Ext.data.TreeStore', {
-        //     model: 'Project'
-        // }).load({
-        //     callback : function(records, operation, successful) {
-        //         if (successful){
-        //             deferred.resolve(records);
-        //         } else {
-        //             deferred.reject('Problem loading: ' + operation.error.errors.join('. '));
-        //         }
-        //     }
+    //     // Ext.create('Ext.data.TreeStore', {
+    //     //     model: 'Project'
+    //     // }).load({
+    //     //     callback : function(records, operation, successful) {
+    //     //         if (successful){
+    //     //             deferred.resolve(records);
+    //     //         } else {
+    //     //             deferred.reject('Problem loading: ' + operation.error.errors.join('. '));
+    //     //         }
+    //     //     }
 
-        // });
+    //     // });
 
-        return deferred;
-    },
+    //     return deferred;
+    // },
     /*
     selector_box.add({
                 xtype:'rallycombobox',
@@ -297,75 +308,80 @@ Ext.define("PTBoard", {
             });
     */
 
-    _addProjectSelector: function(rcb) {
-        var me = this;
+    // _addProjectSelector: function(rcb) {
+    //     var me = this;
 
-        me.release = rcb;
+    //     me.release = rcb;
 
-        var project_name = me.getContext().get('project').Name;
+    //     var project_name = me.getContext().get('project').Name;
 
-        var filter = Ext.create('Rally.data.wsapi.Filter', {
-             property: 'Releases.Name',
-             operator: 'contains',
-             value: rcb.rawValue
-        });
+    //     var filter = Ext.create('Rally.data.wsapi.Filter', {
+    //          property: 'Releases.Name',
+    //          operator: 'contains',
+    //          value: rcb.rawValue
+    //     });
 
-        // filters = [
-        //      {property:'Parent.Name',  value: project_name},
-        //      {property:'Parent.Parent.Name', value: project_name},
-        //      {property:'Parent.Parent.Parent.Name', value: project_name},
-        //      {property:'Parent.Parent.Parent.Parent.Name', value: project_name},
-        //      {property:'Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-        //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-        //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-        //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-        //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name}
-        // ]
+    //     // filters = [
+    //     //      {property:'Parent.Name',  value: project_name},
+    //     //      {property:'Parent.Parent.Name', value: project_name},
+    //     //      {property:'Parent.Parent.Parent.Name', value: project_name},
+    //     //      {property:'Parent.Parent.Parent.Parent.Name', value: project_name},
+    //     //      {property:'Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+    //     //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+    //     //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+    //     //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
+    //     //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name}
+    //     // ]
  
-        // filter = Rally.data.wsapi.Filter.or(filters).and({property:'Children.Name', value:"" }).and(filter);
+    //     // filter = Rally.data.wsapi.Filter.or(filters).and({property:'Children.Name', value:"" }).and(filter);
         
 
 
-        var selector_box = this.down('#selector_box');
-            selector_box.remove('projectCombobox');
-            selector_box.add({
-                xtype:'rallycombobox',
-                id:'projectCombobox',
-                multiSelect: true,
-                allowNoEntry:true,
-                autoSelect: false,
-                fieldLabel: 'Project:',
-                labelAlign: 'right',
-                noEntryText: '--All--',
-                width:400,
-                // noEntryValue: 'All',
-                storeConfig: {
-                    autoLoad: true,
-                    model: 'Project',
-                    filters: filter,
-                    remoteFilter: true
-                },
-                //tpl:comboTPL,
-                listeners: {
-                    scope: this,
-                    change: function(cb) {
-                        if(cb.lastSelection[0].get('Name')==""){
-                            this._getArtifacts(filter);
-                        }else{
-                            cb.lastSelection;
-                            var project_filters = [];
-                            Ext.Array.each(cb.lastSelection,function(project){
-                                project_filters.push({property:'ObjectID',  value: project.get('ObjectID')});
-                            });
-                            this._getArtifacts(Rally.data.wsapi.Filter.or(project_filters));
-                        }
+    //     var selector_box = this.down('#selector_box');
+    //         selector_box.remove('projectCombobox');
+    //         selector_box.add({
+    //             xtype:'rallycombobox',
+    //             id:'projectCombobox',
+    //             multiSelect: true,
+    //             allowNoEntry:true,
+    //             autoSelect: false,
+    //             fieldLabel: 'Project:',
+    //             labelAlign: 'right',
+    //             noEntryText: '--All--',
+    //             width:400,
+    //             listConfig: {
+    //                 getInnerTpl: function(displayField) {
+    //                     return '<div class="x-combo-list-item"><img src="" class="chkCombo-default-icon chkCombo" /> {'+ displayField +'}</div>';
+    //                 }
+    //             },
+    //             // noEntryValue: 'All',
+    //             storeConfig: {
+    //                 autoLoad: true,
+    //                 model: 'Project',
+    //                 filters: filter,
+    //                 remoteFilter: true
+    //             },
+    //             //tpl:comboTPL,
+    //             listeners: {
+    //                 scope: this,
+    //                 change: function(cb) {
+    //                     if(cb.lastSelection[0].get('Name')==""){
+    //                         this._getArtifacts(filter);
+    //                     }else{
+    //                         cb.lastSelection;
+    //                         var project_filters = [];
+    //                         Ext.Array.each(cb.lastSelection,function(project){
+    //                             project_filters.push({property:'ObjectID',  value: project.get('ObjectID')});
+    //                         });
+    //                         this._getArtifacts(Rally.data.wsapi.Filter.or(project_filters));
+    //                     }
                         
-                    }
-                }
-            });
+    //                 }
+    //             }
+    //         });
 
-            this._getArtifacts(filter);
-    },
+    //         this._getArtifacts(filter);
+    // },
 
 
     _getArtifacts: function(){
