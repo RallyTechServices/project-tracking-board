@@ -3,11 +3,11 @@
 <head>
     <title>Project Tracking Board</title>
     <!--  (c) 2015,2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Tue Apr 05 2016 17:33:56 GMT-0400 (EDT) -->
+    <!--  Build Date: Tue Apr 05 2016 19:11:01 GMT-0400 (EDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Apr 05 2016 17:33:56 GMT-0400 (EDT)";
-        var CHECKSUM = 60055548246;
+        var APP_BUILD_DATE = "Tue Apr 05 2016 19:11:01 GMT-0400 (EDT)";
+        var CHECKSUM = 60075318530;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -609,7 +609,7 @@ Ext.define("PTBoard", {
     config: {
         defaultSettings: {
             testCaseType   : 'User Acceptance Testing',
-            smRole: 'Scrum Master',
+            smRole: 'Scrum/Agile Master',
             poRole: 'Product Owner'
         }
     },

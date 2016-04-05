@@ -16,7 +16,7 @@ Ext.define("PTBoard", {
     config: {
         defaultSettings: {
             testCaseType   : 'User Acceptance Testing',
-            smRole: 'Scrum Master',
+            smRole: 'Scrum/Agile Master',
             poRole: 'Product Owner'
         }
     },
