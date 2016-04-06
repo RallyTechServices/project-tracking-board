@@ -483,8 +483,19 @@ Ext.define("PTBoard", {
                             });
                         },me);
 
+                        // PortfolioItemCostTracking.promise.ParallelThrottle.throttle(promises, 12, me).then({
+                        //     success: function(results){
+                        //         //console.log('Throttle results',results);
+                        //         deferred.resolve(_.flatten(results));
+                        //     },
+                        //     failure: function(msg){
+                        //         deferred.reject(msg);
+                        //     },
+                        //     scope: me
+                        // });
 
-                        Deft.Chain.sequence(promises).then({
+                        PortfolioItemCostTracking.promise.ParallelThrottle.throttle(promises, 12, me).then({
+                        //Deft.Chain.sequence(promises).then({
                             success: function(results){
                                 console.log('All permissions >>',results,results.length);
                                 var projects = [];

@@ -3,11 +3,11 @@
 <head>
     <title>Project Tracking Board</title>
     <!--  (c) 2015,2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Tue Apr 05 2016 19:11:01 GMT-0400 (EDT) -->
+    <!--  Build Date: Tue Apr 05 2016 22:15:39 GMT-0400 (EDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Apr 05 2016 19:11:01 GMT-0400 (EDT)";
-        var CHECKSUM = 60075318530;
+        var APP_BUILD_DATE = "Tue Apr 05 2016 22:15:39 GMT-0400 (EDT)";
+        var CHECKSUM = 63753547337;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -175,6 +175,46 @@ Ext.define('Rally.technicalservices.Logger',{
     }
 
 });
+
+Ext.define('PortfolioItemCostTracking.promise.ParallelThrottle',{
+    requires: ['Deft.promise.Promise'],
+    statics: {
+
+        throttle: function (fns, maxParallelCalls, scope) {
+
+            if (maxParallelCalls <= 0 || fns.length < maxParallelCalls){
+                return Deft.promise.Chain.parallel(fns, scope);
+            }
+
+
+            var parallelFns = [],
+                fnChunks = [],
+                idx = -1;
+
+            for (var i = 0; i < fns.length; i++) {
+                if (i % maxParallelCalls === 0) {
+                    idx++;
+                    fnChunks[idx] = [];
+                }
+                fnChunks[idx].push(fns[i]);
+            }
+
+            _.each(fnChunks, function (chunk) {
+                parallelFns.push(function () {
+                    return Deft.promise.Chain.parallel(chunk, scope);
+                });
+            });
+
+            return Deft.Promise.reduce(parallelFns, function(groupResults, fnGroup) {
+                return Deft.Promise.when(fnGroup.call(scope)).then(function(results) {
+                    groupResults = groupResults.concat(results || []);
+                    return groupResults;
+                });
+            }, []);
+        }
+    }
+});
+
 
 /*
 Tree combo
@@ -1076,8 +1116,19 @@ Ext.define("PTBoard", {
                             });
                         },me);
 
+                        // PortfolioItemCostTracking.promise.ParallelThrottle.throttle(promises, 12, me).then({
+                        //     success: function(results){
+                        //         //console.log('Throttle results',results);
+                        //         deferred.resolve(_.flatten(results));
+                        //     },
+                        //     failure: function(msg){
+                        //         deferred.reject(msg);
+                        //     },
+                        //     scope: me
+                        // });
 
-                        Deft.Chain.sequence(promises).then({
+                        PortfolioItemCostTracking.promise.ParallelThrottle.throttle(promises, 12, me).then({
+                        //Deft.Chain.sequence(promises).then({
                             success: function(results){
                                 console.log('All permissions >>',results,results.length);
                                 var projects = [];
