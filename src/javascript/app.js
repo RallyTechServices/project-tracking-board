@@ -15,7 +15,7 @@ Ext.define("PTBoard", {
     //this.getSetting('testCaseType');
     config: {
         defaultSettings: {
-            testCaseType   : 'User Acceptance Testing',
+            testCaseType:'User Acceptance Testing',
             smRole: 'Scrum/Agile Master',
             poRole: 'Product Owner'
         }
@@ -34,7 +34,7 @@ Ext.define("PTBoard", {
                 minWidth: 200,
                 margin: 10,
                 autoExpand: false,
-                alwaysExpanded: false,
+                alwaysExpanded: false,                
                 model: 'TestCase',
                 field: 'Type',
                 readyEvent: 'ready'
@@ -72,16 +72,6 @@ Ext.define("PTBoard", {
                         
     launch: function() {
         var me = this;
-
-        // me._getProjectTreeStore().then({
-        //     success: function(store) {
-        //         me.project_tree_store = store;
-        //     },
-        //     failure: function(error_message){
-        //         alert(error_message);
-        //     },
-        //     scope: me
-        // });
 
         me._addSelector();
     },
@@ -131,23 +121,12 @@ Ext.define("PTBoard", {
             id:'projectCombobox',
             multiSelect: true,
             allowNoEntry:true,
-            autoSelect: false,
+            autoSelect: true,
             fieldLabel: 'Project:',
             labelAlign: 'right',
             noEntryText: '--All--',
+            value: '--All--',
             width:400,
-            // listConfig: {
-            //     getInnerTpl: function(displayField) {
-            //         console.log(displayField);
-            //         return '<div class="x-combo-list-item"><img src="" class="chkCombo-default-icon chkCombo" /> {'+ displayField +'}</div>';
-            //     }
-            // },
-            // listConfig : {          
-            //     getInnerTpl : function() {
-            //         return '<div class="x-combo-list-item"><img src="' + Ext.BLANK_IMAGE_URL + '" class="chkCombo-default-icon chkCombo" /> {fieldName} </div>';
-            //     }
-            // },
-            // noEntryValue: 'All',
             storeConfig: {
                 autoLoad: true,
                 model: 'Project',
@@ -157,6 +136,9 @@ Ext.define("PTBoard", {
             //tpl:comboTPL,
             listeners: {
                 scope: this,
+                ready: function(cb){
+                    cb.setRawValue('--All--');
+                },
                 change: function(cb) {
                         if(cb.lastSelection.length ==0 || (cb.lastSelection.length > 0 && cb.lastSelection[0].get('ObjectID') == null) ){
                             this.project_filter = filter;
@@ -173,6 +155,7 @@ Ext.define("PTBoard", {
 
         });
 
+
         selector_box.add({
             xtype: 'rallybutton',
             text: 'Update',
@@ -185,204 +168,7 @@ Ext.define("PTBoard", {
             }
         });
 
-        // selector_box.add({           
-        //     fieldLabel: 'Project',
-        //     labelWidth: 45,
-        //     xtype: 'rallyprojectpicker',
-        //     showMostRecentlyUsedProjects: false,
-        //     multiple: true,
-        //     margin: 10,
-        //     stateful: true,
-        //     stateId: 'rally.technicalservices.timeline.project',
-        //     stateEvents: ['change'],
-        //     workspace:this.getContext().get('workspace'),
-        //     listeners: {
-        //         scope: this,
-        //         change: function(selector) {
-        //             var project = selector.getSelectedRecord();
-        //             this.selected_context = {
-        //                 workspace:project.get('Workspace')._ref,
-        //                 project:project.get('_ref')
-        //             };
-        //             console.log(project);
-        //         }
-        //     }
-        // });
-
-        // selector_box.add({
-        //  xtype: 'rallyprojecttree',
-        //  workspace:this.getContext().get('workspace')
-        //  multiple:true
-        // });
-        // var treeStoreSec = Ext.create('Ext.data.TreeStore',
-        // {
-        //     root:
-        //     {
-        //         text: 'Root',
-        //         id: 'root',
-        //         expanded: true,
-        //         checked: false,
-        //         children:
-        //         [
-        //             {id: '1', text: 'First node', leaf: false, checked: false, children:
-        //                 [
-        //                     {id: '3', text: 'First child node', checked: false, leaf: true},
-        //                     {id: '4', text: 'Second child node', checked: false, leaf: true}
-        //                 ]
-        //             },
-        //             {id: '2', text: 'Second node', checked: false, leaf: true}
-        //         ]
-        //     },
-        //     folderSort: false
-        // });
-
-        // selector_box.add(
-        //     Ext.create('Ext.ux.TreeCombo',
-        //     {
-        //         store: this.project_tree_store
-        //     })
-        // );
-
     },
-
-    // _getProjectTreeStore: function(){
-    //     var deferred = Ext.create('Deft.Deferred');
-
-    //     var filters = [
-    //      {property:'Name',  value: project_name},
-    //      {property:'Parent.Name',  value: project_name},
-    //      {property:'Parent.Parent.Name', value: project_name},
-    //      {property:'Parent.Parent.Parent.Name', value: project_name},
-    //      {property:'Parent.Parent.Parent.Parent.Name', value: project_name},
-    //      {property:'Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-    //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-    //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-    //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-    //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name}
-    //     ];
- 
-
-    //     // Ext.create('Ext.data.TreeStore', {
-    //     //     model: 'Project'
-    //     // }).load({
-    //     //     callback : function(records, operation, successful) {
-    //     //         if (successful){
-    //     //             deferred.resolve(records);
-    //     //         } else {
-    //     //             deferred.reject('Problem loading: ' + operation.error.errors.join('. '));
-    //     //         }
-    //     //     }
-
-    //     // });
-
-    //     return deferred;
-    // },
-    /*
-    selector_box.add({
-                xtype:'rallycombobox',
-                stateful: true,
-                stateId: this.getContext().getScopedStateId('portfolioItem-cb'),
-                width: 200,
-                fieldLabel: 'PortfolioItem:',
-                labelAlign: 'right',
-                context: this.getContext(),
-                // typeAhead : true,
-                // typeAheadDelay: 100,
-    //            minChars: 1, 
-                allowBlank: false,
-                autoSelect: false,
-                storeConfig: {
-                    model: this.getSetting('portfolioItemField'),
-                    autoLoad:true,
-                    // ,
-                    // filters: filters,
-                    remoteFilter: true
-                },
-                listeners: {
-                    scope: this,
-                    change: function(cb) {
-                        this._publishTimebox();
-                        this._updateData(cb.getRecord());
-                    }
-                }
-            });
-    */
-
-    // _addProjectSelector: function(rcb) {
-    //     var me = this;
-
-    //     me.release = rcb;
-
-    //     var project_name = me.getContext().get('project').Name;
-
-    //     var filter = Ext.create('Rally.data.wsapi.Filter', {
-    //          property: 'Releases.Name',
-    //          operator: 'contains',
-    //          value: rcb.rawValue
-    //     });
-
-    //     // filters = [
-    //     //      {property:'Parent.Name',  value: project_name},
-    //     //      {property:'Parent.Parent.Name', value: project_name},
-    //     //      {property:'Parent.Parent.Parent.Name', value: project_name},
-    //     //      {property:'Parent.Parent.Parent.Parent.Name', value: project_name},
-    //     //      {property:'Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-    //     //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-    //     //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-    //     //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name},
-    //     //      {property:'Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Parent.Name', value: project_name}
-    //     // ]
- 
-    //     // filter = Rally.data.wsapi.Filter.or(filters).and({property:'Children.Name', value:"" }).and(filter);
-        
-
-
-    //     var selector_box = this.down('#selector_box');
-    //         selector_box.remove('projectCombobox');
-    //         selector_box.add({
-    //             xtype:'rallycombobox',
-    //             id:'projectCombobox',
-    //             multiSelect: true,
-    //             allowNoEntry:true,
-    //             autoSelect: false,
-    //             fieldLabel: 'Project:',
-    //             labelAlign: 'right',
-    //             noEntryText: '--All--',
-    //             width:400,
-    //             listConfig: {
-    //                 getInnerTpl: function(displayField) {
-    //                     return '<div class="x-combo-list-item"><img src="" class="chkCombo-default-icon chkCombo" /> {'+ displayField +'}</div>';
-    //                 }
-    //             },
-    //             // noEntryValue: 'All',
-    //             storeConfig: {
-    //                 autoLoad: true,
-    //                 model: 'Project',
-    //                 filters: filter,
-    //                 remoteFilter: true
-    //             },
-    //             //tpl:comboTPL,
-    //             listeners: {
-    //                 scope: this,
-    //                 change: function(cb) {
-    //                     if(cb.lastSelection[0].get('Name')==""){
-    //                         this._getArtifacts(filter);
-    //                     }else{
-    //                         cb.lastSelection;
-    //                         var project_filters = [];
-    //                         Ext.Array.each(cb.lastSelection,function(project){
-    //                             project_filters.push({property:'ObjectID',  value: project.get('ObjectID')});
-    //                         });
-    //                         this._getArtifacts(Rally.data.wsapi.Filter.or(project_filters));
-    //                     }
-                        
-    //                 }
-    //             }
-    //         });
-
-    //         this._getArtifacts(filter);
-    // },
-
 
     _getArtifacts: function(){
         var me = this;
@@ -470,6 +256,8 @@ Ext.define("PTBoard", {
         var me = this;
         //me.logger.log("Starting load:",model_name,model_fields);
         // me.setLoading('Loading All Uesrs');
+        //console.log('Settings >>',me.getSetting('testCaseType'),me.getSetting('smRole'),me.getSetting('poRole'));
+
         Deft.Promise.all(me._loadAStoreWithAPromiseModel(model_name, model_fields,filter)).then({
             success: function(records){
                     //console.log('total users -yay',records)
@@ -482,17 +270,6 @@ Ext.define("PTBoard", {
                                 return me._getCollection(result); 
                             });
                         },me);
-
-                        // PortfolioItemCostTracking.promise.ParallelThrottle.throttle(promises, 12, me).then({
-                        //     success: function(results){
-                        //         //console.log('Throttle results',results);
-                        //         deferred.resolve(_.flatten(results));
-                        //     },
-                        //     failure: function(msg){
-                        //         deferred.reject(msg);
-                        //     },
-                        //     scope: me
-                        // });
 
                         PortfolioItemCostTracking.promise.ParallelThrottle.throttle(promises, 12, me).then({
                         //Deft.Chain.sequence(promises).then({
@@ -533,8 +310,7 @@ Ext.define("PTBoard", {
                     }
                 },
                 failure: function(error_message){
-                    // console.log('error_message>>',error_message)
-                    // alert(error_message);
+
                     deferred.reject(error_message);
 
                 },
@@ -557,11 +333,14 @@ Ext.define("PTBoard", {
             scope: me,
             callback: function(records, operation, success) {
                 Ext.Array.each(records, function(user_rec) {
-                    var user = {
+                    var user = {    
+                                    ObjectID:user_rec.get('ObjectID'),
                                     FullName: user_rec.get('FirstName') + ' ' + user_rec.get('LastName'),
                                     Role: user_rec.get('Role')
                                 }
-                    users.push(user);
+                    if(user_rec.get('Role')==me.getSetting('poRole') || user_rec.get('Role')==me.getSetting('smRole')){
+                        users.push(user);
+                    }
 
                     if(user_rec.get('Role')==me.getSetting('poRole')){
                         po_oids.push(user_rec.get('ObjectID'));
@@ -574,7 +353,7 @@ Ext.define("PTBoard", {
 
                 }); 
 
-                Deft.Promise.all([me._getCounts(record,po_oids,sm_oids)],me).then({
+                Deft.Promise.all([me._getCounts(record,po_oids,sm_oids,users)],me).then({
                     success: function(results){
                         var allCollection = {
                             TCCounts: results[0],
@@ -588,7 +367,6 @@ Ext.define("PTBoard", {
                     scope: me
                 });
 
-                //deferred.resolve(users);
             }
         });
 
@@ -597,7 +375,7 @@ Ext.define("PTBoard", {
 
 
 
-    _getCounts: function(record,po_oids,sm_oids){
+    _getCounts: function(record,po_oids,sm_oids,users){
         var deferred = Ext.create('Deft.Deferred');
         console.log('po_oids',po_oids);
         var me = this;
@@ -611,9 +389,7 @@ Ext.define("PTBoard", {
             model: 'UserStory',
             fetch: ['ObjectID','ScheduleState','PassingTestCaseCount', 'TestCaseCount','Defects','TestCases'],
             filters: filters
-            // ,
-            // limit: 1,
-            // pageSize: 1
+
         }).load({
             scope: me,
             callback: function(records, operation, success){
@@ -642,11 +418,11 @@ Ext.define("PTBoard", {
                     });
 
                     project_promises.push(function(){
-                        return me._getStoriesAcceptedByPO(user_story_ids,po_oids,user_story_state); 
+                        return me._getStoriesAcceptedByPO(user_story_ids,po_oids,user_story_state,users); 
                     });
 
                     project_promises.push(function(){
-                        return me._getStoriesAcceptedBySM(user_story_ids,sm_oids,user_story_state); 
+                        return me._getStoriesAcceptedBySM(user_story_ids,sm_oids,user_story_state,users); 
                     });
 
                     //Get Total Attachments.
@@ -760,13 +536,12 @@ Ext.define("PTBoard", {
         How to get unique values. 
     */
 
-    _getStoriesAcceptedByPO: function(user_story_ids,po_oids,user_story_state){
+    _getStoriesAcceptedByPO: function(user_story_ids,po_oids,user_story_state,users){
         var deferred = Ext.create('Deft.Deferred');
-
 
         var snapshotStore = Ext.create('Rally.data.lookback.SnapshotStore', {
             "context": this.getContext().getDataContext(),
-            "fetch": ["ScheduleState", "PlanEstimate"],
+            "fetch": ["ScheduleState", "_User",],
             "hydrate": ["ScheduleState"],
             "find": {
                     "ObjectID": { "$in": user_story_ids },
@@ -784,16 +559,39 @@ Ext.define("PTBoard", {
             callback: function(records, operation) {
                 if(operation.wasSuccessful()) {
                     var total_us_accepted_by_po = 0
+                    var po_accepted = [];
                     Ext.Array.each(user_story_state,function(uss){
                         Ext.Array.each(records,function(rec){
                             if(rec.get('ObjectID')==uss.ObjectID && (uss.ScheduleState == 'Accepted' || uss.ScheduleState == 'Released to Prod')){
                                 total_us_accepted_by_po += 1;
+                                po_accepted.push({ObjectID:rec.get('ObjectID'), UserObjectID:rec.get('_User')});
                                 return false;
                             }
                         });
                     });
+                    var users_with_accepted = [];
+
+                    Ext.Array.each(users,function(user){
+                        var total_accepted = 0;
+                        Ext.Array.each(po_accepted, function(poa){
+                            if(user.ObjectID==poa.UserObjectID){
+                                total_accepted += 1;
+                            }
+                        });
+
+                        var user = {    
+                                    ObjectID:user.ObjectID,
+                                    FullName: user.FullName,
+                                    Role: user.Role,
+                                    TotalAccepted: total_accepted,
+                                    TotalAcceptedPercent:Ext.util.Format.number(user_story_ids.length > 0 ? ( total_accepted/user_story_ids.length) * 100 : 0, "000.00")
+                        }
+                        users_with_accepted.push(user);
+                    });
+
                     var result_pc = user_story_ids.length > 0 ? ( total_us_accepted_by_po/user_story_ids.length) * 100 : 0;
-                    var result = {Stories:total_us_accepted_by_po,Percentage:Ext.util.Format.number(result_pc, "000.00")};
+                    var result = {Stories:total_us_accepted_by_po,Percentage:Ext.util.Format.number(result_pc, "000.00"),Users:users_with_accepted};
+
                     deferred.resolve(result);
 
                 }else{
@@ -806,13 +604,12 @@ Ext.define("PTBoard", {
 
     },
     
-    _getStoriesAcceptedBySM: function(user_story_ids,sm_oids,user_story_state){
+    _getStoriesAcceptedBySM: function(user_story_ids,sm_oids,user_story_state,users){
         var deferred = Ext.create('Deft.Deferred');
-
 
         var snapshotStore = Ext.create('Rally.data.lookback.SnapshotStore', {
             "context": this.getContext().getDataContext(),
-            "fetch": ["ScheduleState", "PlanEstimate"],
+            "fetch": ["ScheduleState", "_User"],
             "hydrate": ["ScheduleState"],
             "find": {
                     "ObjectID": { "$in": user_story_ids },
@@ -829,16 +626,42 @@ Ext.define("PTBoard", {
             callback: function(records, operation) {
                 if(operation.wasSuccessful()) {
                     var total_us_accepted_by_sm = 0
+                    var sm_accepted = [];
+
                     Ext.Array.each(user_story_state,function(uss){
                         Ext.Array.each(records,function(rec){
                             if(rec.get('ObjectID')==uss.ObjectID && uss.ScheduleState == 'Released to Prod'){
                                 total_us_accepted_by_sm += 1;
+                                sm_accepted.push({ObjectID:rec.get('ObjectID'), UserObjectID:rec.get('_User')});
                                 return false;
                             }
                         });
                     });
+
+                    var users_with_accepted = [];
+
+                    Ext.Array.each(users,function(user){
+                        var total_accepted = 0;
+                        Ext.Array.each(sm_accepted, function(sma){
+                            if(user.ObjectID==sma.UserObjectID){
+                                total_accepted += 1;
+                            }
+                        });
+
+                        var user = {    
+                                    ObjectID:user.ObjectID,
+                                    FullName: user.FullName,
+                                    Role: user.Role,
+                                    TotalAccepted: total_accepted,
+                                    TotalAcceptedPercent:Ext.util.Format.number(user_story_ids.length > 0 ? ( total_accepted/user_story_ids.length) * 100 : 0, "000.00")
+                        }
+
+                        users_with_accepted.push(user);
+                    });
+
                     var result_pc = user_story_ids.length > 0 ? ( total_us_accepted_by_sm/user_story_ids.length) * 100 : 0;
-                    var result = {Stories:total_us_accepted_by_sm,Percentage:Ext.util.Format.number(result_pc, "000.00")};
+                    var result = {Stories:total_us_accepted_by_sm,Percentage:Ext.util.Format.number(result_pc, "000.00"),Users:users_with_accepted};
+
                     deferred.resolve(result);
                 }else{
                     deferred.reject('Problem querying lookback');
@@ -1053,25 +876,25 @@ Ext.define("PTBoard", {
 
                 },
                 {
-                        text: 'PO NAME', 
-                        dataIndex: 'POorSMNames',
+                        text: 'PO NAME (USER STORY COUNT / %)', 
+                        dataIndex: 'USAcceptedByPO',
                         flex: 2,
-                        renderer: function(POorSMNames){
+                        renderer: function(USAcceptedByPO){
                             var text = [];
-                            if(POorSMNames){
-                                    Ext.Array.each(POorSMNames, function(user) {
+                            if(USAcceptedByPO.Users){
+                                    Ext.Array.each(USAcceptedByPO.Users, function(user) {
                                         if(me.getSetting('poRole') == user.Role){
-                                            text.push(user.FullName);
+                                            text.push(user.FullName +' ('+user.TotalAccepted+' / '+user.TotalAcceptedPercent+'%)');
                                         }
                                     });
                             }else{
                                 text.push('NA');
                             }
 
-                            return text;
+                            return text.join('<br/>');
                         }
 
-                },
+                },                
                 {
                     text: 'PO ACCEPTED USER STORY COUNT / %', 
                     dataIndex: 'USAcceptedByPO',
@@ -1082,23 +905,24 @@ Ext.define("PTBoard", {
                     }
                 },
                 {
-                        text: 'SM NAME', 
-                        dataIndex: 'POorSMNames',
+                        text: 'SM NAME (USER STORY COUNT / %)', 
+                        dataIndex: 'USAcceptedBySM',
                         flex: 2,
-                        renderer: function(POorSMNames){
+                        renderer: function(USAcceptedBySM){
                             var text = [];
-                            if(POorSMNames){
-                                    Ext.Array.each(POorSMNames, function(user) {
+                            if(USAcceptedBySM.Users){
+                                    Ext.Array.each(USAcceptedBySM.Users, function(user) {
                                         if(me.getSetting('smRole') == user.Role){
-                                            text.push(user.FullName);
+                                            text.push(user.FullName +' ('+user.TotalAccepted+' / '+user.TotalAcceptedPercent+'%)');
                                         }
                                     });
                             }else{
                                 text.push('NA');
                             }
 
-                            return text;
+                            return text.join('<br/>');
                         }
+
                 },
                 {
                     text: 'SM RELEASED TO PROD USER STORY COUNT / %', 
