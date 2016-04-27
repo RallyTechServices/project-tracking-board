@@ -3,14 +3,14 @@
 <head>
     <title>Project Tracking Board</title>
     <!--  (c) 2015,2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Thu Apr 14 2016 15:57:06 GMT-0400 (EDT) -->
+    <!--  Build Date: Wed Apr 27 2016 09:35:15 GMT-0400 (EDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Apr 14 2016 15:57:06 GMT-0400 (EDT)";
+        var APP_BUILD_DATE = "Wed Apr 27 2016 09:35:15 GMT-0400 (EDT)";
         var CHECKSUM = [%= checksum %];
     </script>
     
-    <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
+    <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
 
     <script type="text/javascript">
         Rally.onReady(function() {

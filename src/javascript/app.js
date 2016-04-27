@@ -15,6 +15,7 @@ Ext.define("PTBoard", {
     //this.getSetting('testCaseType');
     config: {
         defaultSettings: {
+            includeTestSets:false,
             testCaseType:'User Acceptance Testing',
             smRole: 'Scrum/Agile Master',
             poRole: 'Product Owner'
@@ -25,6 +26,14 @@ Ext.define("PTBoard", {
         var me = this;
 
         return [
+            {
+                name: 'includeTestSets',
+                xtype: 'rallycheckboxfield',
+                boxLabelAlign: 'after',
+                fieldLabel: '',
+                margin: '0 0 25 200',
+                boxLabel: 'Include TestSets<br/><span style="color:#999999;"><i>Tick to include the TestCases in a TestSet</i></span>'
+            },
             {
                 name: 'testCaseType',
                 xtype: 'rallyfieldvaluecombobox',
@@ -37,7 +46,12 @@ Ext.define("PTBoard", {
                 alwaysExpanded: false,                
                 model: 'TestCase',
                 field: 'Type',
-                readyEvent: 'ready'
+                readyEvent: 'ready',
+                listeners: {
+                    ready: function(cb) {
+                        cb.setValue(me.getSetting('testCaseType'));
+                    }
+                }
             },
             {
                 name: 'smRole',
@@ -51,7 +65,12 @@ Ext.define("PTBoard", {
                 alwaysExpanded: false,
                 model: 'User',
                 field: 'Role',
-                readyEvent: 'ready'
+                readyEvent: 'ready',
+                listeners: {
+                    ready: function(cb) {
+                        cb.setValue(me.getSetting('smRole'));
+                    }
+                }
             },
             {
                 name: 'poRole',
@@ -65,7 +84,12 @@ Ext.define("PTBoard", {
                 alwaysExpanded: false,
                 model: 'User',
                 field: 'Role',
-                readyEvent: 'ready'
+                readyEvent: 'ready',
+                listeners: {
+                    ready: function(cb) {
+                        cb.setValue(me.getSetting('poRole'));
+                    }
+                }
             }
         ];
     },
@@ -107,10 +131,13 @@ Ext.define("PTBoard", {
             fieldLabel: 'Release:',
             width:500,
             margin:10,
+            showArrows : false,
+            context : this.getContext(),
+            growToLongestValue : true,
+            defaultToCurrentTimebox : true,
             listeners: {
                 scope: this,
                 change: function(rcb) {
-                    //this._addProjectSelector(rcb);
                     this.release = rcb;
                 }
             }
@@ -125,6 +152,7 @@ Ext.define("PTBoard", {
             fieldLabel: 'Project:',
             labelAlign: 'right',
             noEntryText: '--All--',
+            noEntryValue:null,
             value: '--All--',
             width:400,
             storeConfig: {
@@ -133,11 +161,11 @@ Ext.define("PTBoard", {
                 filters: filter,
                 remoteFilter: true
             },
-            //tpl:comboTPL,
             listeners: {
                 scope: this,
                 ready: function(cb){
-                    cb.setRawValue('--All--');
+                    cb.setValue('--All--');
+                    cb.setValueField(null);
                 },
                 change: function(cb) {
                         if(cb.lastSelection.length ==0 || (cb.lastSelection.length > 0 && cb.lastSelection[0].get('ObjectID') == null) ){
@@ -152,9 +180,7 @@ Ext.define("PTBoard", {
                 }
             },
             margin:10
-
         });
-
 
         selector_box.add({
             xtype: 'rallybutton',
@@ -396,8 +422,6 @@ Ext.define("PTBoard", {
                 if (success){
                     var tc_counts = []
                     console.log('_fetchAttributeCounts>>',records)
-                    var total_tc = 0;
-                    var total_tc_pass = 0;
                     var total_defects = 0;
                     
                     var project_promises = [];
@@ -408,8 +432,6 @@ Ext.define("PTBoard", {
 
 
                     Ext.Array.each(records, function(user_story) {
-                        total_tc += user_story.get('TestCaseCount');
-                        total_tc_pass += user_story.get('PassingTestCaseCount');
                         total_defects += user_story.get('Defects').Count;
                         user_story_ids.push(user_story.get('ObjectID'));
                         user_story_state.push({ObjectID:user_story.get('ObjectID'),ScheduleState:user_story.get('ScheduleState')});
@@ -417,29 +439,79 @@ Ext.define("PTBoard", {
                         tc_filters.push({ property: 'WorkProduct.ObjectID', value: user_story.get('ObjectID')});
                     });
 
-                    project_promises.push(function(){
-                        return me._getStoriesAcceptedByPO(user_story_ids,po_oids,user_story_state,users); 
-                    });
 
-                    project_promises.push(function(){
-                        return me._getStoriesAcceptedBySM(user_story_ids,sm_oids,user_story_state,users); 
-                    });
 
-                    //Get Total Attachments.
+                    //filters to include the TestCases of the TestSets
+                    var tc_release_project_filters =    Rally.data.wsapi.Filter.and([
+                                                            { property: 'TestSets.Project.ObjectID', value: record.get('ObjectID')},
+                                                            { property: 'TestSets.Release.Name',value:me.release.rawValue}
+                                                        ]);
+
+                    //filters to include the Attachments of TestCases of the TestSets
+                    var attach_release_project_filters   =  Rally.data.wsapi.Filter.and([
+                                                { property: 'TestCaseResult.TestCase.TestSets.Project.ObjectID', value: record.get('ObjectID')},
+                                                { property: 'TestCaseResult.TestCase.TestSets.Release.Name',value:me.release.rawValue}
+                                            ]);                    
+
+                    //1. Get Total test cases.
                     project_promises.push(function(){
-                        if(0 < attach_filters.length){
-                            return me.fetchWsapiCount('Attachment',Rally.data.wsapi.Filter.or(attach_filters)); 
+                        if(0 < tc_filters.length){
+                            if(me.getSetting('includeTestSets')){
+                                return me.fetchWsapiCount('TestCase',Rally.data.wsapi.Filter.or(tc_filters).or(tc_release_project_filters)); 
+                            }else{
+                                return me.fetchWsapiCount('TestCase',Rally.data.wsapi.Filter.or(tc_filters)); 
+                            }
                         }else{
                             return 0;
                         }
                     });
 
+                    //2. Total Passed Test cases
+                    project_promises.push(function(){
+                        if(0 < tc_filters.length){
+                            if(me.getSetting('includeTestSets')){
+                                return me.fetchWsapiCount('TestCase',Rally.data.wsapi.Filter.or(tc_filters).or(tc_release_project_filters).and({ property: 'LastVerdict',value:'Pass'})); 
+                            }else{
+                                return me.fetchWsapiCount('TestCase',Rally.data.wsapi.Filter.or(tc_filters).and({ property: 'LastVerdict',value:'Pass'})); 
+                            }
+                        }else{
+                            return 0;
+                        }
+                    });
 
+                    //3. Lookback API Call to get Stories accepted by Product Owner 
+                    project_promises.push(function(){
+                        return me._getStoriesAcceptedByPO(user_story_ids,po_oids,user_story_state,users); 
+                    });
+
+                    //4. Lookback API Call to get Stories accepted by Scrum Master
+                    project_promises.push(function(){
+                        return me._getStoriesAcceptedBySM(user_story_ids,sm_oids,user_story_state,users); 
+                    });
+
+                    //5. Get Total Attachments.
+                    project_promises.push(function(){
+                        if(0 < attach_filters.length){
+                            if(me.getSetting('includeTestSets')){
+                                return me.fetchWsapiCount('Attachment',Rally.data.wsapi.Filter.or(attach_filters).or(attach_release_project_filters)); 
+                            }else{
+                                return me.fetchWsapiCount('Attachment',Rally.data.wsapi.Filter.or(attach_filters)); 
+                            }
+                        }else{
+                            return 0;
+                        }
+                    });
+
+                    //filters for Total Testcases based on the case type (UAT)
                     if(0 < tc_filters.length){
-                        tc_filters_for_wsapi = Rally.data.wsapi.Filter.or(tc_filters).and({ property: 'Type',value:me.getSetting('testCaseType')});
+                        if(me.getSetting('includeTestSets')){
+                            tc_filters_for_wsapi = Rally.data.wsapi.Filter.or(tc_filters).or(tc_release_project_filters).and({ property: 'Type',value:me.getSetting('testCaseType')});
+                        }else{
+                            tc_filters_for_wsapi = Rally.data.wsapi.Filter.or(tc_filters).and({ property: 'Type',value:me.getSetting('testCaseType')});
+                        }
                     }
 
-
+                    //6. Get Total Testcases based on the case type (UAT)
                     project_promises.push(function(){
                         if(0 < tc_filters.length){
                             return me.fetchWsapiCount('TestCase',tc_filters_for_wsapi); 
@@ -449,11 +521,16 @@ Ext.define("PTBoard", {
                     });
 
 
+                    //filters for total Testcases based on the case type (UAT) and verdict (passed ones)
                     if(0 < tc_filters.length){
-                        tc_pass_filters_for_wsapi = Rally.data.wsapi.Filter.or(tc_filters).and({ property: 'Type',value:me.getSetting('testCaseType')}).and({ property: 'LastVerdict',value:'Pass'});
+                        if(me.getSetting('includeTestSets')){
+                            tc_pass_filters_for_wsapi = Rally.data.wsapi.Filter.or(tc_filters).or(tc_release_project_filters).and({ property: 'Type',value:me.getSetting('testCaseType')}).and({ property: 'LastVerdict',value:'Pass'});
+                        }else{
+                            tc_pass_filters_for_wsapi = Rally.data.wsapi.Filter.or(tc_filters).and({ property: 'Type',value:me.getSetting('testCaseType')}).and({ property: 'LastVerdict',value:'Pass'});
+                        }                        
                     }
 
-
+                    //7. Get Total Testcases based on the case type (UAT) and verdict (passed ones)
                     project_promises.push(function(){
                         if(0 < tc_filters.length){
                             return me.fetchWsapiCount('TestCase',tc_pass_filters_for_wsapi); 
@@ -462,10 +539,10 @@ Ext.define("PTBoard", {
                         }
                     });
 
-                    // Get Total Test Cases Executed.
+                    //8. Get Total Test Cases Executed.
                     project_promises.push(function(){
                         if(0 < tc_filters.length){
-                            return me._getTotalTCExecuted(Rally.data.wsapi.Filter.or(tc_filters),Rally.data.wsapi.Filter.or(attach_filters));
+                            return me._getTotalTCExecuted(Rally.data.wsapi.Filter.or(tc_filters),Rally.data.wsapi.Filter.or(attach_filters),tc_release_project_filters,attach_release_project_filters);
                         }else{
                             return 0;
                         }
@@ -476,16 +553,16 @@ Ext.define("PTBoard", {
                         success: function(results){
                             console.log('after lookback>>',results);
                             var tc_counts = {
-                                TotalTestCases: total_tc,
-                                PassedTestCases: total_tc_pass,
-                                TotalDefects: total_defects,
+                                TotalTestCases: results[0],
+                                PassedTestCases: results[1],
                                 UserStoryCount:user_story_ids.length,
-                                USAcceptedByPO:results[0],
-                                USAcceptedBySM:results[1],
-                                TotalAttachments:results[2],
-                                UATTCCounts:results[3],
-                                UATTCPassCounts:results[4],
-                                TotalTCExecuted:results[5]
+                                USAcceptedByPO:results[2],
+                                USAcceptedBySM:results[3],
+                                TotalAttachments:results[4],
+                                UATTCCounts:results[5],
+                                UATTCPassCounts:results[6],
+                                TotalTCExecuted:results[7],
+                                TotalDefects: total_defects,
                             }
                             deferred.resolve(tc_counts);
 
@@ -676,7 +753,7 @@ Ext.define("PTBoard", {
 
     // Total Number of TC executed in the Release
     // definition of executed: criteria :has a verdict, has attachment on the result, executed within the timebox, tied to a user story part of the release. 
-   _getTotalTCExecuted: function(tc_filters,attach_filters){
+   _getTotalTCExecuted: function(tc_filters,attach_filters,tc_release_project_filters,attach_release_project_filters){
         var deferred = Ext.create('Deft.Deferred');
 
         var me = this;
@@ -685,7 +762,11 @@ Ext.define("PTBoard", {
 
         tc_promises.push(function(){
             if(attach_filters!=null){
-                return me._getAttachmentsForUS(Rally.data.wsapi.Filter.or(attach_filters))
+                if(me.getSetting('includeTestSets')){
+                    return me._getAttachmentsForUS(Rally.data.wsapi.Filter.or(attach_filters).or(attach_release_project_filters));
+                }else{
+                    return me._getAttachmentsForUS(Rally.data.wsapi.Filter.or(attach_filters));
+                }
             }else{
                 return null;
             }
@@ -693,7 +774,11 @@ Ext.define("PTBoard", {
 
         tc_promises.push(function(){
             if(tc_filters!=null){
-                return me._getTestCasesForUS(Rally.data.wsapi.Filter.or(tc_filters))
+                if(me.getSetting('includeTestSets')){
+                    return me._getTestCasesForUS(Rally.data.wsapi.Filter.or(tc_filters).or(tc_release_project_filters));
+                }else{
+                    return me._getTestCasesForUS(Rally.data.wsapi.Filter.or(tc_filters));                  
+                }
             }else{
                 return null;
             }
@@ -711,6 +796,8 @@ Ext.define("PTBoard", {
                     has_verdict = false;
                     executed_with_in_release = false;
                     // check if the TestCase has a verdict
+                    //check if the TestCase was executed with in the current release
+
                     if(test_case.LastVerdict!=null || test_case.LastVerdict!=""){
                         has_verdict = true;
 
@@ -718,7 +805,6 @@ Ext.define("PTBoard", {
                             executed_with_in_release = true;
                         }
                     }
-                    //check if the TestCase was executed with in the current release
 
                     //check if there's an attachment for each user story
                     has_attachment = false;
@@ -771,7 +857,6 @@ Ext.define("PTBoard", {
                     var attachments = [];
                     Ext.Array.each(records,function(attachment){
                         attachments.push({AttachmentOID:attachment.get('ObjectID'),
-                                            UserStoryOID:attachment.get('TestCaseResult').TestCase.WorkProduct.ObjectID,
                                             TestCaseOID:attachment.get('TestCaseResult').TestCase.ObjectID});
                     });
 
@@ -799,7 +884,6 @@ Ext.define("PTBoard", {
                     var test_cases = [];
                     Ext.Array.each(records,function(test_case){
                         test_cases.push({  TestCaseOID:test_case.get('ObjectID'),
-                                            UserStoryOID:test_case.get('WorkProduct').ObjectID,
                                             LastVerdict:test_case.get('LastVerdict'),
                                             Type:test_case.get('Type'),
                                             LastRun:test_case.get('LastRun')});
@@ -855,6 +939,7 @@ Ext.define("PTBoard", {
                 ftype: 'summary'
             }],
             scope: me,
+            showRowActionsColumn: false,
             columnCfgs: [
                 {
                     text: 'PROJECT', 
