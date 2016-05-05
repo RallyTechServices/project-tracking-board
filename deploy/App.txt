@@ -3,11 +3,11 @@
 <head>
     <title>Project Tracking Board</title>
     <!--  (c) 2015,2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Wed Apr 27 2016 09:35:15 GMT-0400 (EDT) -->
+    <!--  Build Date: Thu May 05 2016 15:55:51 GMT-0400 (EDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Apr 27 2016 09:35:15 GMT-0400 (EDT)";
-        var CHECKSUM = 61445363390;
+        var APP_BUILD_DATE = "Thu May 05 2016 15:55:51 GMT-0400 (EDT)";
+        var CHECKSUM = 68122778533;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -849,7 +849,12 @@ Ext.define("PTBoard", {
     _getArtifacts: function(){
         var me = this;
         this.setLoading("Loading Projects...");
-     
+        me.totalPOAccepted  = 0;
+        me.totalNonPOAccepted  = 0;
+        me.totalSMAccepted  = 0;
+        me.totalNonSMAccepted  = 0;
+        me.totalUserStoryCount = 0;
+
  
         var release_filter = Ext.create('Rally.data.wsapi.Filter', {
              property: 'Releases.Name',
@@ -971,6 +976,7 @@ Ext.define("PTBoard", {
                                             UserStoryCount:results[i].TCCounts.UserStoryCount
                                         }
                                         projects.push(project);
+                                        me.totalUserStoryCount += results[i].TCCounts.UserStoryCount;
                                 }
                                 console.log('Projects >>',projects);
                                 // create custom store (call function ) combine permissions and results in to one.
@@ -1014,17 +1020,17 @@ Ext.define("PTBoard", {
                                     FullName: user_rec.get('FirstName') + ' ' + user_rec.get('LastName'),
                                     Role: user_rec.get('Role')
                                 }
-                    if(user_rec.get('Role')==me.getSetting('poRole') || user_rec.get('Role')==me.getSetting('smRole')){
+                    // if(user_rec.get('Role')==me.getSetting('poRole') || user_rec.get('Role')==me.getSetting('smRole')){
                         users.push(user);
-                    }
+                    // }
 
-                    if(user_rec.get('Role')==me.getSetting('poRole')){
+                    // if(user_rec.get('Role')==me.getSetting('poRole')){
                         po_oids.push(user_rec.get('ObjectID'));
-                    }
+                    // }
 
-                    if(user_rec.get('Role')==me.getSetting('smRole')){
+                    // if(user_rec.get('Role')==me.getSetting('smRole')){
                         sm_oids.push(user_rec.get('ObjectID'));
-                    }
+                    // }
                     
 
                 }); 
@@ -1201,7 +1207,7 @@ Ext.define("PTBoard", {
 
                     Deft.Chain.sequence(project_promises).then({
                         success: function(results){
-                            console.log('after lookback>>',results);
+                            //console.log('after lookback>>',results);
                             var tc_counts = {
                                 TotalTestCases: results[0],
                                 PassedTestCases: results[1],
@@ -1212,7 +1218,7 @@ Ext.define("PTBoard", {
                                 UATTCCounts:results[5],
                                 UATTCPassCounts:results[6],
                                 TotalTCExecuted:results[7],
-                                TotalDefects: total_defects,
+                                TotalDefects: total_defects
                             }
                             deferred.resolve(tc_counts);
 
@@ -1265,7 +1271,7 @@ Ext.define("PTBoard", {
 
     _getStoriesAcceptedByPO: function(user_story_ids,po_oids,user_story_state,users){
         var deferred = Ext.create('Deft.Deferred');
-
+        var me = this;
         var snapshotStore = Ext.create('Rally.data.lookback.SnapshotStore', {
             "context": this.getContext().getDataContext(),
             "fetch": ["ScheduleState", "_User",],
@@ -1313,6 +1319,13 @@ Ext.define("PTBoard", {
                                     TotalAccepted: total_accepted,
                                     TotalAcceptedPercent:Ext.util.Format.number(user_story_ids.length > 0 ? ( total_accepted/user_story_ids.length) * 100 : 0, "000.00")
                         }
+
+                        if(me.getSetting('poRole') == user.Role){
+                            me.totalPOAccepted  += total_accepted;
+                        }else{
+                            me.totalNonPOAccepted  += total_accepted;
+                        }
+                        
                         users_with_accepted.push(user);
                     });
 
@@ -1324,7 +1337,8 @@ Ext.define("PTBoard", {
                 }else{
                     deferred.reject('Problem querying lookback');
                 }
-            }
+            },
+            scope:me
         });
     
     return deferred;
@@ -1381,6 +1395,12 @@ Ext.define("PTBoard", {
                                     Role: user.Role,
                                     TotalAccepted: total_accepted,
                                     TotalAcceptedPercent:Ext.util.Format.number(user_story_ids.length > 0 ? ( total_accepted/user_story_ids.length) * 100 : 0, "000.00")
+                        }
+
+                        if(me.getSetting('smRole') == user.Role){
+                            me.totalSMAccepted  += total_accepted;
+                        }else{
+                            me.totalNonSMAccepted  += total_accepted;
                         }
 
                         users_with_accepted.push(user);
@@ -1466,7 +1486,6 @@ Ext.define("PTBoard", {
 
                     });
 
-
                     if(has_attachment && has_verdict && executed_with_in_release){
                         total_executed += 1;
                     }
@@ -1475,7 +1494,6 @@ Ext.define("PTBoard", {
                     if(has_attachment && has_verdict && executed_with_in_release && test_case.Type == me.getSetting('testCaseType')){
                         total_uat_executed += 1;
                     }
-
                 });
 
                 var executed_totals = {
@@ -1581,7 +1599,6 @@ Ext.define("PTBoard", {
         var me = this;
         var display_box = this.down('#display_box');
         display_box.removeAll();
-
         display_box.add({
             xtype: 'rallygrid',
             store: store,
@@ -1611,64 +1628,114 @@ Ext.define("PTBoard", {
 
                 },
                 {
-                        text: 'PO NAME (USER STORY COUNT / %)', 
-                        dataIndex: 'USAcceptedByPO',
-                        flex: 2,
-                        renderer: function(USAcceptedByPO){
-                            var text = [];
-                            if(USAcceptedByPO.Users){
-                                    Ext.Array.each(USAcceptedByPO.Users, function(user) {
-                                        if(me.getSetting('poRole') == user.Role){
-                                            text.push(user.FullName +' ('+user.TotalAccepted+' / '+user.TotalAcceptedPercent+'%)');
-                                        }
-                                    });
-                            }else{
-                                text.push('NA');
-                            }
-
-                            return text.join('<br/>');
-                        }
-
-                },                
-                {
                     text: 'PO ACCEPTED USER STORY COUNT / %', 
                     dataIndex: 'USAcceptedByPO',
-                    flex: 1,
-                    align: 'center',
+                    flex: 2,
                     renderer: function(USAcceptedByPO){
-                        return USAcceptedByPO.Stories + ' / ' + USAcceptedByPO.Percentage+ '%';
+                        var text = [];
+                        if(USAcceptedByPO.Users){
+                            Ext.Array.each(USAcceptedByPO.Users, function(user) {
+                                if(me.getSetting('poRole') == user.Role){
+                                    text.push(user.FullName +' ('+user.TotalAccepted+' / '+user.TotalAcceptedPercent+'%)');
+                                }
+                            });
+                        }else{
+                            text.push('NA');
+                        }
+
+                        return text.join('<br/>');
+                    },
+                    summaryRenderer: function() {
+                        return '<b>'+me.totalPOAccepted+' / '+Ext.util.Format.number(me.totalUserStoryCount > 0 ? ( me.totalPOAccepted/me.totalUserStoryCount) * 100 : 0, "000.00")+'%</b>';
                     }
-                },
+
+                },                
+                // {
+                //     text: 'NON PO ACCEPTED USER STORY COUNT / %', 
+                //     dataIndex: 'USAcceptedByPO',
+                //     flex: 2,
+                //     align: 'center',
+                //     renderer: function(USAcceptedByPO){
+                //         return USAcceptedByPO.Stories + ' / ' + USAcceptedByPO.Percentage+ '%';
+                //     }
+                // },
                 {
-                        text: 'SM NAME (USER STORY COUNT / %)', 
-                        dataIndex: 'USAcceptedBySM',
-                        flex: 2,
-                        renderer: function(USAcceptedBySM){
+                    text: 'NON PO ACCEPTED USER STORY COUNT / %', 
+                    dataIndex: 'USAcceptedByPO',
+                    flex: 2,
+                    renderer: function(USAcceptedByPO){
                             var text = [];
-                            if(USAcceptedBySM.Users){
-                                    Ext.Array.each(USAcceptedBySM.Users, function(user) {
-                                        if(me.getSetting('smRole') == user.Role){
-                                            text.push(user.FullName +' ('+user.TotalAccepted+' / '+user.TotalAcceptedPercent+'%)');
-                                        }
-                                    });
+                            if(USAcceptedByPO.Users){
+                                Ext.Array.each(USAcceptedByPO.Users, function(user) {
+                                    if(me.getSetting('poRole') != user.Role && 0 < user.TotalAccepted){
+                                        text.push(user.FullName +' ('+user.TotalAccepted+' / '+user.TotalAcceptedPercent+'%)');
+                                    }
+                                });
                             }else{
                                 text.push('NA');
                             }
 
                             return text.join('<br/>');
-                        }
-
+                    },
+                    summaryRenderer: function() {
+                        return '<b>'+me.totalNonPOAccepted+' / '+Ext.util.Format.number(me.totalUserStoryCount > 0 ? ( me.totalNonPOAccepted/me.totalUserStoryCount) * 100 : 0, "000.00")+'%</b>';
+                    }
                 },
                 {
                     text: 'SM RELEASED TO PROD USER STORY COUNT / %', 
                     dataIndex: 'USAcceptedBySM',
-                    flex: 1,
-                    align: 'center',
+                    flex: 2,
                     renderer: function(USAcceptedBySM){
-                        return USAcceptedBySM.Stories + ' / ' + USAcceptedBySM.Percentage+ '%';
+                        var text = [];
+                        if(USAcceptedBySM.Users){
+                                Ext.Array.each(USAcceptedBySM.Users, function(user) {
+                                    if(me.getSetting('smRole') == user.Role){
+                                        text.push(user.FullName +' ('+user.TotalAccepted+' / '+user.TotalAcceptedPercent+'%)');
+                                    }
+                                });
+                        }else{
+                            text.push('NA');
+                        }
+
+                        return text.join('<br/>');
+                    },
+                    summaryRenderer: function() {
+                        return '<b>'+me.totalSMAccepted+' / '+Ext.util.Format.number(me.totalUserStoryCount > 0 ? ( me.totalSMAccepted/me.totalUserStoryCount) * 100 : 0, "000.00")+'%</b>';
                     }
 
                 },
+                // {
+                //     text: 'NON SM RELEASED TO PROD USER STORY COUNT / %', 
+                //     dataIndex: 'USAcceptedBySM',
+                //     flex: 2,
+                //     align: 'center',
+                //     renderer: function(USAcceptedBySM){
+                //         return USAcceptedBySM.Stories + ' / ' + USAcceptedBySM.Percentage+ '%';
+                //     }
+
+                // },
+                {
+                    text: 'NON SM RELEASED TO PROD USER STORY COUNT / %', 
+                    dataIndex: 'USAcceptedBySM',
+                    flex: 2,
+                    renderer: function(USAcceptedBySM){
+                        var text = [];
+                        if(USAcceptedBySM.Users){
+                                Ext.Array.each(USAcceptedBySM.Users, function(user) {
+                                    if(me.getSetting('smRole') != user.Role && 0 < user.TotalAccepted){
+                                        text.push(user.FullName +' ('+user.TotalAccepted+' / '+user.TotalAcceptedPercent+'%)');
+                                    }
+                                });
+                        }else{
+                            text.push('NA');
+                        }
+
+                        return text.join('<br/>');
+                    },
+                    summaryRenderer: function() {
+                        return '<b>'+me.totalNonSMAccepted+' / '+Ext.util.Format.number(me.totalUserStoryCount > 0 ? ( me.totalNonSMAccepted/me.totalUserStoryCount) * 100 : 0, "000.00")+'%</b>';
+                    }
+                },                
                 {
                     text: 'TOTAL TESTS COUNT', 
                     dataIndex: 'TotalTestCases',
